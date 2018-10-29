@@ -1,0 +1,14 @@
+vars:
+  url: https://google.com
+main:
+  - navigate:
+      url: $url
+      sleep:
+        before: 5
+        after: 3
+  - click:
+      dom: "#lst-ib"
+      wait: 1
+  - input:
+      dom: "#lst-ib"
+      value: abcde

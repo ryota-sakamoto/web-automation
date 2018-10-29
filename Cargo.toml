@@ -1,0 +1,9 @@
+[package]
+name = "web-automation"
+version = "0.1.0"
+authors = ["ryota-sakamoto <sakamo.ryota+github@gmail.com>"]
+
+[dependencies]
+selenium-rs = "0.1"
+yaml-rust = "0.4"
+clap = "2.32"
