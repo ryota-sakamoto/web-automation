@@ -4,6 +4,6 @@ version = "0.1.0"
 authors = ["ryota-sakamoto <sakamo.ryota+github@gmail.com>"]
 
 [dependencies]
-selenium-rs = "0.1"
+selenium-rs = { git = "https://github.com/ryota-sakamoto/selenium-rs.git" }
 yaml-rust = "0.4"
 clap = "2.32"
