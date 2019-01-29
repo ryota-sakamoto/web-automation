@@ -20,6 +20,7 @@ use std::{
     time::Duration,
     fs::File,
     io::prelude::*,
+    process::Command,
 };
 mod action;
 use action::Action;
@@ -55,6 +56,11 @@ fn main() {
             actions.push(action);
         }
     }
+
+    Command::new("chromedriver")
+        .arg("--port=4444")
+        .arg("--url-base=wd/hub")
+        .spawn();
 
     let mut driver = WebDriver::new(Browser::Chrome);
 
