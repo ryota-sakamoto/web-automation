@@ -1,5 +1,7 @@
 extern crate selenium_rs;
-extern crate yaml_rust;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_yaml;
 extern crate clap;
 
 use selenium_rs::webdriver::{
@@ -11,10 +13,6 @@ use clap::{
     App,
     Arg,
 };
-use yaml_rust::{
-    YamlLoader,
-    Yaml,
-};
 use std::{
     thread,
     time::Duration,
@@ -23,7 +21,10 @@ use std::{
     process::Command,
 };
 mod action;
-use action::Action;
+use action::{
+    Action,
+    ActionManager,
+};
 
 macro_rules! we {
     ($t:expr) => {
@@ -43,19 +44,9 @@ fn main() {
     let file_name = matches.value_of("file").unwrap();
 
     let mut file = File::open(file_name).unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents);
 
-    let mut docs = YamlLoader::load_from_str(&contents).unwrap();
-    let doc = &docs[0];
-    let mut actions = Vec::new();
-
-    for ref v in doc["main"].as_vec() {
-        for a in v.iter() {
-            let action = Action::from(a);
-            actions.push(action);
-        }
-    }
+    let mut actions: ActionManager = serde_yaml::from_reader(file).unwrap();
+    actions.replace_vars();
 
     Command::new("chromedriver")
         .arg("--port=4444")
@@ -65,17 +56,15 @@ fn main() {
     let mut driver = WebDriver::new(Browser::Chrome);
 
     we!(driver.start_session());
-    for action in actions {
+    for action in actions.main {
         use Action::*;
         match action {
-            Navigate {url, sleep} => {
-                thread::sleep(Duration::from_millis((sleep.before * 1000) as u64));
+            Navigate {url} => {
                 we!(driver.navigate(&url));
-                thread::sleep(Duration::from_millis((sleep.after * 1000) as u64))
             },
-            Click {dom, count, wait} => {
+            Click {dom, count} => {
+                let count = count.unwrap_or(1);
                 for _ in 0..count {
-                    thread::sleep(Duration::from_millis(wait * 1000));
                     let element = we!(driver.query_element(Selector::CSS, &dom));
                     we!(element.click());
                 }
@@ -83,17 +72,19 @@ fn main() {
             Input {dom, value, enter} => {
                 let element = we!(driver.query_element(Selector::CSS, &dom));
                 we!(element.type_text(&value));
-                if enter {
+                if enter.unwrap_or(true) {
                     we!(element.type_text("\u{E007}"));
                 }
             },
-            _ => {
-                println!("Not Implement: {:?}", action);
-            }
+            Sleep {time} => {
+                if time == -1 {
+                    thread::sleep(Duration::from_millis(std::u64::MAX));
+                } else {
+                    thread::sleep(Duration::from_millis(time as u64 * 1000));
+                }
+            },
         }
     }
-
-    thread::sleep(Duration::from_millis(10000));
 }
 
 fn init_clap<'a, 'b>() -> App<'a, 'b> {

@@ -1,69 +1,68 @@
-use yaml_rust::{
-    Yaml,
-};
+use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct ActionManager {
+    vars: HashMap<String, String>,
+    pub main: Vec<Action>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Action {
     Navigate {
         url: String,
-        sleep: Sleep,
     },
     Click {
         dom: String,
-        count: u64,
-        wait: u64,
+        count: Option<u64>,
     },
     Input {
         dom: String,
         value: String,
-        enter: bool,
+        enter: Option<bool>,
     },
-    Invalid,
+    Sleep {
+        time: i64,
+    },
 }
 
-#[derive(Debug, Clone)]
-pub struct Sleep {
-    pub before: i64,
-    pub after: i64,
-}
-
-impl<'a> From<&'a Yaml> for Action {
-    fn from(y: &Yaml) -> Action {
-        use self::Action::*;
-        let h = y.as_hash().unwrap();
-        h.iter().map(|kv| {
-            let k = kv.0;
-            let v = kv.1;
-
-            let s = k.as_str().unwrap();
-            match s {
-                "navigate" => {
+impl ActionManager {
+    pub fn replace_vars(&mut self) {
+        use Action::*;
+        self.main = self.main.iter().map(|action| {
+            match action {
+                Navigate {url} => {
                     Navigate {
-                        url: v["url"].as_str().unwrap().to_string(),
-                        sleep: Sleep {
-                            before: v["sleep"]["before"].as_i64().unwrap_or(0),
-                            after: v["sleep"]["after"].as_i64().unwrap_or(0),
-                        },
+                        url: self.replace_value(url),
                     }
                 },
-                "click" => {
+                Click {dom, count} => {
                     Click {
-                        dom: v["dom"].as_str().unwrap().to_string(),
-                        count: v["count"].as_i64().unwrap_or(1) as u64,
-                        wait: v["wait"].as_i64().unwrap_or(1) as u64,
+                        dom: self.replace_value(dom),
+                        count: count.to_owned(),
                     }
                 },
-                "input" => {
+                Input {dom, value, enter} => {
                     Input {
-                        dom: v["dom"].as_str().unwrap().to_string(),
-                        value: v["value"].as_str().unwrap().to_string(),
-                        enter: v["enter"].as_bool().unwrap_or(false),
+                        dom: self.replace_value(dom),
+                        value: self.replace_value(value),
+                        enter: enter.to_owned(),
                     }
                 },
-                _ => {
-                    Invalid
-                }
+                Sleep {time} => {
+                    Sleep {
+                        time: time.to_owned(),
+                    }
+                },
             }
-        }).collect::<Vec<Action>>().get(0).unwrap_or(&Invalid).clone()
+        }).collect();
+    }
+
+    fn replace_value(&self, value: &str) -> String {
+        let mut value = value.to_string();
+        for (k, v) in &self.vars {
+            value = value.replace(&format!("${}", k), v);
+        }
+        value
     }
 }

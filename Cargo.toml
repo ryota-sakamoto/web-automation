@@ -7,3 +7,6 @@ authors = ["ryota-sakamoto <sakamo.ryota+github@gmail.com>"]
 selenium-rs = { git = "https://github.com/ryota-sakamoto/selenium-rs.git" }
 yaml-rust = "0.4"
 clap = "2.32"
+serde = "1.0"
+serde_derive = "1.0"
+serde_yaml = "0.8"

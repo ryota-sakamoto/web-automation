@@ -3,12 +3,10 @@ vars:
 main:
   - navigate:
       url: $url
-      sleep:
-        before: 5
-        after: 3
-  - click:
-      dom: "#lst-ib"
-      wait: 1
+  - sleep:
+      time: 5
   - input:
-      dom: "#lst-ib"
+      dom: ".gLFyf"
       value: abcde
+  - sleep:
+      time: -1
